@@ -12,7 +12,11 @@ import {
   CheckCircle2,
   XCircle,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Github,
+  GitBranch,
+  Star,
+  ExternalLink
 } from 'lucide-react';
 import { Usuario, Partida, Aposta, StatusAposta } from '../types';
 
@@ -22,9 +26,21 @@ interface UserHomeScreenProps {
   bets: Aposta[];
   onLogout: () => void;
   onPlaceBet: (partida: Partida, time: 'Casa' | 'Fora' | 'Empate') => void;
+  githubUser?: any;
+  githubRepo?: any;
+  onConnectGithub: () => void;
 }
 
-export default function UserHomeScreen({ user, partidas, bets, onLogout, onPlaceBet }: UserHomeScreenProps) {
+export default function UserHomeScreen({ 
+  user, 
+  partidas, 
+  bets, 
+  onLogout, 
+  onPlaceBet,
+  githubUser,
+  githubRepo,
+  onConnectGithub
+}: UserHomeScreenProps) {
   const openBets = bets.filter(b => b.status === StatusAposta.PENDENTE);
   const closedBets = bets.filter(b => b.status !== StatusAposta.PENDENTE);
 
@@ -121,6 +137,85 @@ export default function UserHomeScreen({ user, partidas, bets, onLogout, onPlace
             </button>
           </div>
         </div>
+
+        {/* GitHub Integration Section */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <Github className="w-5 h-5" />
+              Integração GitHub
+            </h3>
+          </div>
+
+          {!githubUser ? (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 text-center space-y-4">
+              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
+                <Github className="w-6 h-6 text-slate-400" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-800">Conecte seu GitHub</p>
+                <p className="text-xs text-slate-500 mt-1">Sincronize sua conta para acompanhar o desenvolvimento do CoximBet.</p>
+              </div>
+              <button 
+                onClick={onConnectGithub}
+                className="w-full bg-[#24292e] text-white font-bold py-3 rounded-xl hover:bg-[#1b1f23] transition-all flex items-center justify-center gap-2"
+              >
+                <Github className="w-4 h-4" />
+                Conectar GitHub
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+              <div className="flex items-center gap-4">
+                <img 
+                  src={githubUser.avatar_url} 
+                  alt={githubUser.login} 
+                  className="w-12 h-12 rounded-full border border-slate-100"
+                />
+                <div>
+                  <p className="text-sm font-bold text-slate-800">{githubUser.name || githubUser.login}</p>
+                  <p className="text-xs text-slate-500">@{githubUser.login}</p>
+                </div>
+                <div className="ml-auto bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2 py-1 rounded-full border border-emerald-100 uppercase">
+                  Conectado
+                </div>
+              </div>
+
+              {githubRepo && (
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <GitBranch className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-bold text-slate-700">{githubRepo.name}</span>
+                    </div>
+                    <a 
+                      href={githubRepo.html_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-slate-400 hover:text-primary transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                  <p className="text-[11px] text-slate-500 line-clamp-2">{githubRepo.description}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                      <span className="text-[10px] font-bold text-slate-600">{githubRepo.stargazers_count}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <GitBranch className="w-3 h-3 text-slate-400" />
+                      <span className="text-[10px] font-bold text-slate-600">{githubRepo.forks_count}</span>
+                    </div>
+                    <div className="ml-auto text-[9px] text-slate-400 font-medium">
+                      Atualizado: {new Date(githubRepo.updated_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
         {/* Partidas Section */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">

@@ -32,6 +32,7 @@ import AdminPartidasScreen from './components/AdminPartidasScreen';
 import AdminFinanceiroScreen from './components/AdminFinanceiroScreen';
 import UserHomeScreen from './components/UserHomeScreen';
 import { supabase } from './lib/supabase';
+import { githubService } from './services/githubService';
 
 // State
 export default function App() {
@@ -55,6 +56,11 @@ export default function App() {
   const [filter, setFilter] = useState<StatusAposta | 'Todos'>('Todos');
   const [clientLoginCpf, setClientLoginCpf] = useState('');
   const [clientLoginError, setClientLoginError] = useState('');
+  const [githubToken, setGithubToken] = useState<string | null>(() => {
+    return localStorage.getItem('coximbet_github_token');
+  });
+  const [githubUser, setGithubUser] = useState<any>(null);
+  const [githubRepo, setGithubRepo] = useState<any>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -97,6 +103,47 @@ export default function App() {
       localStorage.removeItem('coximbet_user');
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Validate origin is from AI Studio preview or localhost
+      const origin = event.origin;
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
+        return;
+      }
+      
+      if (event.data?.type === 'GITHUB_AUTH_SUCCESS') {
+        const token = event.data.token;
+        setGithubToken(token);
+        localStorage.setItem('coximbet_github_token', token);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  useEffect(() => {
+    if (githubToken) {
+      const fetchGithubData = async () => {
+        try {
+          const [user, repo] = await Promise.all([
+            githubService.getUserInfo(githubToken),
+            githubService.getRepoInfo(githubToken, import.meta.env.VITE_GITHUB_REPO_URL || 'https://github.com/allanjonesms-alt/coximbet')
+          ]);
+          setGithubUser(user);
+          setGithubRepo(repo);
+        } catch (error) {
+          console.error('Error fetching GitHub data:', error);
+          // If token is invalid, clear it
+          if ((error as any).response?.status === 401) {
+            setGithubToken(null);
+            localStorage.removeItem('coximbet_github_token');
+          }
+        }
+      };
+      fetchGithubData();
+    }
+  }, [githubToken]);
 
   const activePartidas = useMemo(() => {
     return partidas.filter(p => p.status === 'ATIVO');
@@ -317,6 +364,12 @@ export default function App() {
         bets={bets}
         onLogout={handleClientLogout}
         onPlaceBet={handleOpenBetModal}
+        githubUser={githubUser}
+        githubRepo={githubRepo}
+        onConnectGithub={async () => {
+          const { url } = await githubService.getAuthUrl();
+          window.open(url, 'github_oauth', 'width=600,height=700');
+        }}
       />
     );
   }
